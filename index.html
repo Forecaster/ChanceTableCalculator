@@ -51,6 +51,14 @@
 			margin-top: 10px;
 			cursor: pointer;
 		}
+
+		.sortable-placeholder {
+			height: 30px;
+			padding: 10px;
+			margin-top: 10px;
+			margin-bottom: 10px;
+			background-color: cornflowerblue;
+		}
 	</style>
 </head>
 <body>
@@ -60,7 +68,7 @@
 			<input class="form-control" type="text" placeholder="Name"/>
 		</div>
 		<div class="col-md-1">
-			<input class="form-control percentage_mode_plc" type="text" placeholder="Wgt"/>
+			<input class="form-control percentage_mode_plc" type="text" placeholder="Wgt" onclick="this.select();"/>
 		</div>
 		<div class="col-md-2">
 			<input class="form-control" type="text" placeholder="Output" readonly="readonly"/>
@@ -75,6 +83,9 @@
 </div>
 <div id="group_template_container" style="display: none;">
 	<div id="group_template" class="group">
+		<div id="group_name" style="margin-top: 10px;">
+			<input type="text" class="form-control" placeholder="Group name" />
+		</div>
 		<div id="row_container">
 
 		</div>
@@ -173,6 +184,17 @@
 			<b>Output:</b> Readonly output field containing the dice range.
 		</div>
 	</div>
+	<div class="row">
+		<div class="col-md-12" style="margin-top: 50px;">
+			<iframe width="560" height="315" src="https://www.youtube.com/embed/cz5XdUQoXE0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+		</div>
+	</div>
+	<div class="row" style="margin-top: 50px; border: 1px dashed gray;">
+		<div class="col-md-12">
+			If you have a feature request, idea for improvement or encounter an issue of some sort please create an <a target="_blank" href="https://github.com/Forecaster/ChanceTableCalculator/issues/new">issue</a> on the GitHub repo. (Requires GitHub account).<br/>
+			You may also find me on my <a target="_blank" href="https://discord.gg/mx849JN">Discord server</a>.
+		</div>
+	</div>
 </div>
 </body>
 <script>
@@ -256,6 +278,15 @@
 			div.innerHTML = group_template.innerHTML;
 			group_container.appendChild(div);
 			groups.push(div);
+
+			$(get_group_row_container(div)).sortable({
+				axis: "y",
+				revert: true,
+				scroll: false,
+				placeholder: "sortable-placeholder",
+				cursor: "move"
+
+		});
 		}
 		return groups;
 	}
@@ -345,8 +376,12 @@
 		return row.children[3].children[0];
 	}
 
+	function get_group_name(group) {
+		return group.children[0].children[0];
+	}
+
 	function get_group_row_container(group) {
-		return group.children[0];
+		return group.children[1];
 	}
 
 	function toggle_collapse(event) {
@@ -371,7 +406,7 @@
 
 		for (let i = 0; i < groups.length; i++) {
 			let input;
-			let children = groups[i].children[0].children;
+			let children = get_group_row_container(groups[i]).children;
 			let values = [];
 			let total_weight = 0;
 
@@ -437,7 +472,7 @@
 		let data = [];
 
 		for (let i = 0; i < groups.length; i++) {
-			const children = groups[i].children[0].children;
+			const children = get_group_row_container(groups[i]).children;
 			let rows = [];
 			for (let i = 0; i < children.length; i++) {
 
@@ -448,7 +483,7 @@
 					percentage: get_percentage(children[i]).innerText
 				});
 			}
-			data.push(rows);
+			data.push({ name: get_group_name(groups[i]).value, rows: rows });
 		}
 		
 		io.value = JSON.stringify(data);
@@ -462,7 +497,9 @@
 			console.log(groups);
 			for (let i = 0; i < groups.length; i++) {
 				const group = add_group(1)[0];
-				const rows = groups[i];
+
+				get_group_name(group).value = groups[i].name;
+				const rows = groups[i].rows;
 
 				for (let i = 0; i < rows.length; i++) {
 					console.log("Add row " + rows[i].name);
@@ -483,5 +520,5 @@
 	}
 
 	let groups = add_group(1);
-	add_row(2, groups[0].children[0]);
+	add_row(2, get_group_row_container(groups[0]));
 </script>
