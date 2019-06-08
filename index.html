@@ -251,8 +251,14 @@
 		<div class="col-md-1" style="line-height: 25pt">
 			<span>?</span>
 		</div>
-		<div class="col-md-1">
+		<div class="col-md-2">
 			<div class="btn btn-danger" onclick="btn_delete_row_confirm(event)">Delete row</div>
+		</div>
+		<div class="col-md-1">
+			<div class="btn btn-secondary" onclick="move_row_up(event)">Up</div>
+		</div>
+		<div class="col-md-1">
+			<div class="btn btn-secondary" onclick="move_row_down(event)">Down</div>
 		</div>
 	</div>
 </div>
@@ -268,6 +274,9 @@
 			</div>
 		</div>
 		<div class="row" style="margin-top: 10px;">
+			<div class="col-md-12 h4">Group Controls</div>
+		</div>
+		<div class="row" style="margin-top: 10px;">
 			<div class="col-md-2">
 				<div class="btn btn-primary" onclick="btn_add_row(event)">Add row</div>
 			</div>
@@ -276,6 +285,14 @@
 			</div>
 			<div class="col-md-2">
 				<div class="btn btn-secondary" onclick="btn_export_fg_wti(event)" title="Export for Fantasy Grounds Table Import" data-toggle="modal" data-target="#export_output_modal">Export to FG TI</div>
+			</div>
+		</div>
+		<div class="row" style="margin-top: 10px;">
+			<div class="col-md-2">
+				<div class="btn btn-primary" onclick="add_group_weight(event, 1)">+1 Weight</div>
+			</div>
+			<div class="col-md-2">
+				<div class="btn btn-primary" onclick="subtract_group_weight(event, 1)">-1 Weight</div>
 			</div>
 		</div>
 	</div>
@@ -351,6 +368,9 @@
 	<div id="group_container">
 	</div>
 	<div class="row" style="margin-top: 20px;">
+		<div class="col-md-12 h4">Global controls</div>
+	</div>
+	<div class="row" style="margin-top: 20px;">
 		<div class="col-md-2">
 			<div class="btn btn-primary" onclick="btn_add_group()">Add group</div>
 		</div>
@@ -373,7 +393,7 @@
 	<div class="row" style="margin-top: 50px; border: 1px dashed gray;">
 		<div class="col-md-12">
 			If you have a feature request, idea for improvement or encounter an issue of some sort please create an <a target="_blank" href="https://github.com/Forecaster/ChanceTableCalculator/issues/new">issue</a> on the GitHub repo. (Requires GitHub account).<br/>
-			You may also find me on my <a target="_blank" href="https://discord.gg/mx849JN">Discord server</a>.
+			You may also find me on <a target="_blank" href="https://discord.gg/mx849JN">My Discord server</a> or the <a target="_blank" href="https://discordapp.com/invite/y2GjAg">Fantasy Grounds Discord Server</a>.
 		</div>
 	</div>
 </div>
@@ -800,6 +820,46 @@
 			bar.innerHTML = "<span class='label-container'><span class='label-outer'><span class='label-inner'>" + percentage.value + "% (" + percentage.count + ")</span></span></span><div>" + percentage.value + "% (" + percentage.count + ")<br/>" + percentage.name + "</div>";
 
 			scale_container.appendChild(bar);
+		}
+	}
+
+	function move_row_up(event) {
+		let row = event.target.parentElement.parentElement;
+		if (row.previousElementSibling !== null)
+			row.previousElementSibling.before(row);
+	}
+
+	function move_row_down(event) {
+		let row = event.target.parentElement.parentElement;
+		if (row.nextElementSibling !== null)
+			row.nextElementSibling.after(row);
+	}
+
+	function add_group_weight(event, amount) {
+		let group = event.target.parentElement.parentElement.parentElement;
+		let group_rows = get_group_row_container(group).children;
+
+		for (let i = 0; i < group_rows.length; i++) {
+			let fweight = get_input(group_rows[i]);
+			let val = parseFloat(fweight.value);
+			if (isNaN(val))
+				fweight.value = 1;
+			else
+				fweight.value = val + amount;
+		}
+	}
+
+	function subtract_group_weight(event, amount) {
+		let group = event.target.parentElement.parentElement.parentElement;
+		let group_rows = get_group_row_container(group).children;
+
+		for (let i = 0; i < group_rows.length; i++) {
+			let fweight = get_input(group_rows[i]);
+			let val = parseFloat(fweight.value);
+			if (isNaN(val))
+				fweight.value = 1;
+			else
+				fweight.value = Math.max(1, val - amount);
 		}
 	}
 
