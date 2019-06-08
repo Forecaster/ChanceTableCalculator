@@ -269,6 +269,7 @@
 		</div>
 		<div id="row_container">
 		</div>
+		<div style="margin-top: 5px;"><i>Drag a row (between input fields) to rearrange</i></div>
 		<div class="row">
 			<div class="scale">
 			</div>
@@ -281,18 +282,21 @@
 				<div class="btn btn-primary" onclick="btn_add_row(event)">Add row</div>
 			</div>
 			<div class="col-md-2">
-				<div class="btn btn-danger" onclick="btn_delete_group_confirm(event)">Delete group</div>
-			</div>
-			<div class="col-md-2">
-				<div class="btn btn-secondary" onclick="btn_export_fg_wti(event)" title="Export for Fantasy Grounds Table Import" data-toggle="modal" data-target="#export_output_modal">Export to FG TI</div>
-			</div>
-		</div>
-		<div class="row" style="margin-top: 10px;">
-			<div class="col-md-2">
 				<div class="btn btn-primary" onclick="add_group_weight(event, 1)">+1 Weight</div>
 			</div>
 			<div class="col-md-2">
+				<div class="btn btn-success" onclick="run_roll_test(event)">Start Roll Test</div>
+			</div>
+		</div>
+		<div class="row" style="margin-top: 10px; margin-bottom: 60px;">
+			<div class="col-md-2">
+				<div class="btn btn-secondary" onclick="btn_export_fg_wti(event)" title="Export for Fantasy Grounds Table Import" data-toggle="modal" data-target="#export_output_modal">Export to FG TI</div>
+			</div>
+			<div class="col-md-2">
 				<div class="btn btn-primary" onclick="subtract_group_weight(event, 1)">-1 Weight</div>
+			</div>
+			<div class="col-md-2">
+				<div class="btn btn-danger" onclick="btn_delete_group_confirm(event)">Delete group</div>
 			</div>
 		</div>
 	</div>
@@ -385,6 +389,22 @@
 			<b>Output:</b> Readonly output field containing the dice range.
 		</div>
 	</div>
+	<div class="row" style="margin-top: 20px; margin-bottom: 5px; display: none;" id="roll_test_container">
+		<div class="col-md-2">
+			<div class="btn btn-danger" onclick="stop_roll_test()">Stop Roll Test</div>
+		</div>
+		<div class="col-md-1">
+			<div class="btn btn-danger" onclick="roll_test_speed_down()">Slower</div>
+		</div>
+		<div class="col-md-1">
+			<div class="btn btn-danger" onclick="roll_test_speed_up()">Faster</div>
+		</div>
+	</div>
+	<div class="row" id="roll_test">
+		<div class="col-md-12">
+
+		</div>
+	</div>
 	<div class="row">
 		<div class="col-md-12" style="margin-top: 50px;">
 			<iframe width="560" height="315" src="https://www.youtube.com/embed/cz5XdUQoXE0" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -411,6 +431,10 @@
 			return result;
 		}
 		return list.sort(compare);
+	}
+
+	function getRndInteger(min, max) {
+		return Math.floor(Math.random() * (max - min) ) + min;
 	}
 
 	const option_dice_size = document.getElementById("option_dice_size");
@@ -735,7 +759,7 @@
 					get_input(row).value = rows[i].input;
 					get_output(row).value = rows[i].output;
 					get_percentage(row).innerText = rows[i].percentage;
-					percentages.push({ name: rows[i].name, value: parseFloat(rows[i].percentage.replace("%", "")) });
+					percentages.push({ name: rows[i].name, value: parseFloat(rows[i].percentage.replace("%", "")), override: null});
 				}
 
 				let scale = $(group).find('.scale')[0];
@@ -785,7 +809,7 @@
 				let perc = percentages[i];
 				if (grouped.indexOf(perc.value) === -1) {
 					grouped.push(perc.value);
-					total += perc.value;
+					total += parseFloat(perc.value);
 				}
 			}
 			console.info("Total: " + total);
@@ -799,7 +823,7 @@
 					value_indexes.push(percentage.value);
 					let override_perc = percentage.value / total;
 					console.log(override_perc);
-					grouped_percentages.push({ name: percentage.name + "<br/>", value: parseFloat((override_perc * 100).toFixed(2)), count: 1 });
+					grouped_percentages.push({ name: percentage.name + "<br/>", value: percentage.value, expected: percentage.expected, override: parseFloat((override_perc * 100).toFixed(2)), count: 1 });
 				} else {
 					grouped_percentages[index].name += percentage.name + "<br/>";
 					grouped_percentages[index].count++;
@@ -816,7 +840,7 @@
 		for (let i = 0; i < percentages.length; i++) {
 			let percentage = percentages[i];
 			let bar = document.createElement("span");
-			bar.style.width = percentage.value + "%";
+			bar.style.width = (percentage.override === null ? percentage.value : percentage.override) + "%";
 			bar.innerHTML = "<span class='label-container'><span class='label-outer'><span class='label-inner'>" + percentage.value + "% (" + percentage.count + ")</span></span></span><div>" + percentage.value + "% (" + percentage.count + ")<br/>" + percentage.name + "</div>";
 
 			scale_container.appendChild(bar);
@@ -861,6 +885,105 @@
 			else
 				fweight.value = Math.max(1, val - amount);
 		}
+	}
+
+	let variance_colors = {
+		'darkred': 1,
+		'red': 0.8,
+		'orange': 0.6,
+		'yellow': 0.4,
+		'green': 0.2,
+		'lime': 0,
+	};
+
+	function get_variance_color(value) {
+		if (value < 0)
+			value = value * -1;
+		for (let key in variance_colors) {
+			if (value > variance_colors[key])
+				return key;
+		}
+	}
+
+	let roll_test = { min_value: 0, max_value: 0, entries: [], total: 0 };
+	let roll_test_id = null;
+	let roll_test_speed_ms = 1000;
+
+	function roll_test_tick() {
+		let result = getRndInteger(roll_test.min_value, roll_test.max_value + 1);
+
+		for (let i = 0; i < roll_test.entries.length; i++) {
+			if (roll_test.entries[i].min <= result && result <= roll_test.entries[i].max) {
+				roll_test.entries[i].count++;
+				roll_test.total++;
+			}
+		}
+
+		let output = document.getElementById("roll_test");
+		let table = "<table cellpadding='5'>";
+		table += "<tr><th></th><th>Hits</th><th>%</th><th>Expected %</th><th>Variance</th></tr>";
+		for (let i = 0; i < roll_test.entries.length; i++) {
+			let entry = roll_test.entries[i];
+			let percentage = parseFloat(((entry.count / roll_test.total) * 100).toFixed(1));
+			let variance = parseFloat(((entry.expected - percentage) * -1).toFixed(2));
+			table += "<tr><td>" + entry.name + "</td><td>" + entry.count + "</td><td>" + percentage + "%</td><td>" + entry.expected + "%</td><td style='color: " + get_variance_color(variance) + "'>" + variance + "</td></tr>";
+		}
+		table += "<tr><td>Last Result</td><td>" + result + "</td></tr>";
+		table += "<tr><td>Rolls</td><td>" + roll_test.total + "</td></tr>";
+		table += "</table>";
+		output.innerHTML = table;
+	}
+
+	function run_roll_test(event) {
+		update();
+
+		let group = event.target.parentElement.parentElement.parentElement;
+		let rows = get_group_row_container(group).children;
+		roll_test.total = 0;
+		roll_test.entries = [];
+
+		let min_value = Number.MAX_VALUE;
+		let max_value = 0;
+		for (let i = 0; i < rows.length; i++) {
+			let min = 0;
+			let max = null;
+			let range = get_output(rows[i]).value.split("-");
+			min = range[0];
+			min_value = Math.min(min_value, min);
+			if (typeof range[1] != "undefined") {
+				max = range[1];
+				max_value = Math.max(max_value, max);
+			} else {
+				max = min;
+				max_value = Math.max(max_value, max);
+			}
+
+			roll_test.entries.push({ name: get_name(rows[i]).value, expected: parseFloat(get_percentage(rows[i]).innerText.replace("%", "")), min: min, max: max, count: 0 });
+		}
+		roll_test.min_value = min_value;
+		roll_test.max_value = max_value;
+
+		$('#roll_test_container').show('fast');
+		roll_test_id = setInterval(roll_test_tick, roll_test_speed_ms);
+		roll_test_tick();
+	}
+
+	function stop_roll_test() {
+		clearInterval(roll_test_id);
+	}
+
+	function roll_test_speed_up() {
+		roll_test_speed_ms = Math.max(100, roll_test_speed_ms - 100);
+		clearInterval(roll_test_id);
+		roll_test_id = setInterval(roll_test_tick, roll_test_speed_ms);
+		roll_test_tick();
+	}
+
+	function roll_test_speed_down() {
+		roll_test_speed_ms += 100;
+		clearInterval(roll_test_id);
+		roll_test_id = setInterval(roll_test_tick, roll_test_speed_ms);
+		roll_test_tick();
 	}
 
 	let groups = add_group(1);
