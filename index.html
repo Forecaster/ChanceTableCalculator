@@ -262,19 +262,9 @@
 			<input type="text" class="form-control" placeholder="Group name" />
 		</div>
 		<div id="row_container">
-
 		</div>
 		<div class="row">
 			<div class="scale">
-				<span style="width: 12%;">
-					<div>Verian</div>
-				</span>
-				<span style="width: 12%;">
-					<div>Laya</div>
-				</span>
-				<span style="width: 25%;">
-					<div>Kenaz</div>
-				</span>
 			</div>
 		</div>
 		<div class="row" style="margin-top: 10px;">
@@ -285,7 +275,7 @@
 				<div class="btn btn-danger" onclick="btn_delete_group_confirm(event)">Delete group</div>
 			</div>
 			<div class="col-md-2">
-				<div class="btn btn-secondary" onclick="btn_export_fg_wti(event)" title="Export for Fantasy Grounds Table Import" data-toggle="modal" data-target="#export_output_modal">Export FG TI</div>
+				<div class="btn btn-secondary" onclick="btn_export_fg_wti(event)" title="Export for Fantasy Grounds Table Import" data-toggle="modal" data-target="#export_output_modal">Export to FG TI</div>
 			</div>
 		</div>
 	</div>
@@ -299,17 +289,17 @@
 				</div>
 			</div>
 			<div class="row" style="margin-top: 10px;">
-				<div class="col-md-1">
-					<div class="btn btn-primary" onclick="load();">Load</div>
+				<div class="col-md-2">
+					<div class="btn btn-primary" onclick="load();">Load Content</div>
 				</div>
-				<div class="col-md-1">
-					<div class="btn btn-success" onclick="save();">Save</div>
+				<div class="col-md-2">
+					<div class="btn btn-success" onclick="save();">Generate Save</div>
 				</div>
 			</div>
 			<div class="row" style="margin-top: 10px;">
 				<div class="col-md-12">
-					<b>Saving:</b> Click save and copy output and save to a textfile or similar.<br/>
-					<b>Loading:</b> Copy previously saved output, paste into textbox and click load.
+					<b>Saving:</b> Click <code>Generate Save</code> and copy output and save to a text file or similar.<br/>
+					<b>Loading:</b> Copy previously saved output, paste into textbox and click <code>Load Content</code>.
 				</div>
 			</div>
 		</div>
