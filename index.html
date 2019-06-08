@@ -66,6 +66,156 @@
 			margin-bottom: 10px;
 			background-color: cornflowerblue;
 		}
+
+		.scale {
+			margin-top: 15px;
+			margin-bottom: 15px;
+			width: 1020px;
+			height: 24px;
+			/*background-color: white;*/
+		}
+
+		.scale > span {
+			position: relative;
+			height: 100%;
+			float: left;
+		}
+
+		.scale > span > div {
+			position: absolute;
+			top: 24px;
+			opacity: 0;
+
+			padding: 6px;
+			background-color: black;
+			color: white;
+			z-index: 1000;
+			width: max-content;
+
+			transition-property: opacity;
+			transition-duration: .4s;
+			transition-timing-function: ease-in-out;
+		}
+
+		.scale > span:hover div {
+			opacity: 1;
+		}
+
+		.scale > span:nth-child(1) {
+			background-color: red;
+			color: white;
+		}
+
+		.scale > span:nth-child(2) {
+			background-color: blue;
+			color: white;
+		}
+
+		.scale > span:nth-child(3) {
+			background-color: green;
+			color: white;
+		}
+
+		.scale > span:nth-child(4) {
+			background-color: gold;
+			color: black;
+		}
+
+		.scale > span:nth-child(5) {
+			background-color: aquamarine;
+			color: black;
+		}
+
+		.scale > span:nth-child(6) {
+			background-color: darkmagenta;
+		}
+
+		.scale > span:nth-child(7) {
+			background-color: lightcoral;
+			color: black;
+		}
+
+		.scale > span:nth-child(8) {
+			background-color: plum;
+			color: black;
+		}
+
+		.scale > span:nth-child(9) {
+			background-color: yellowgreen;
+			color: black;
+		}
+
+		.scale > span:nth-child(10) {
+			background-color: tomato;
+			color: black;
+		}
+
+		.scale > span:nth-child(11) {
+			background-color: #b495ff;
+			color: black;
+		}
+
+		.scale > span:nth-child(12) {
+			background-color: #a9ff6e;
+			color: black;
+		}
+
+		.scale > span:nth-child(13) {
+			background-color: #ab78ff;
+			color: black;
+		}
+
+		.scale > span:nth-child(14) {
+			background-color: #30007a;
+			color: white;
+		}
+
+		.scale > span:nth-child(15) {
+			background-color: #533815;
+			color: white;
+		}
+
+		.scale > span:nth-child(16) {
+			background-color: #387c2a;
+			color: white;
+		}
+
+		.scale > span:nth-child(17) {
+			background-color: #3e000f;
+			color: white;
+		}
+
+		.scale > span:nth-child(18) {
+			background-color: #1e5351;
+			color: white;
+		}
+
+		.scale > span:nth-child(19) {
+			background-color: #661d0c;
+			color: white;
+		}
+
+		.scale > span:nth-child(20) {
+			background-color: #148bff;
+			color: black;
+		}
+
+		.label-container {
+			overflow: hidden;
+			height: 100%;
+			display: block;
+		}
+
+		.label-outer::before {
+			content: '';
+			display: inline-block;
+		}
+
+		.label-inner {
+			display: inline-block;
+			white-space: nowrap;
+			padding-left: 4px;
+		}
 	</style>
 </head>
 <body>
@@ -113,6 +263,19 @@
 		</div>
 		<div id="row_container">
 
+		</div>
+		<div class="row">
+			<div class="scale">
+				<span style="width: 12%;">
+					<div>Verian</div>
+				</span>
+				<span style="width: 12%;">
+					<div>Laya</div>
+				</span>
+				<span style="width: 25%;">
+					<div>Kenaz</div>
+				</span>
+			</div>
 		</div>
 		<div class="row" style="margin-top: 10px;">
 			<div class="col-md-2">
@@ -226,6 +389,20 @@
 </div>
 </body>
 <script>
+	function sortObj(list, key) {
+		function compare(a, b) {
+			a = a[key];
+			b = b[key];
+			var type = (typeof(a) === 'string' ||
+				typeof(b) === 'string') ? 'string' : 'number';
+			var result;
+			if (type === 'string') result = a.localeCompare(b);
+			else result = a - b;
+			return result;
+		}
+		return list.sort(compare);
+	}
+
 	const option_dice_size = document.getElementById("option_dice_size");
 	const option_dice_num = document.getElementById("option_dice_num");
 	const option_strict_dice = document.getElementById("option_strict_dice");
@@ -466,6 +643,7 @@
 			const dice = get_dynamic_dice_size(total_weight);
 			console.log(dice);
 
+			let percentages = [];
 			let position = dice.min;
 			for (let i = 0; i < values.length; i++) {
 				console.info("Row " + i);
@@ -492,9 +670,16 @@
 
 					get_output(value.row).value = range;
 					get_percentage(value.row).innerText = parseFloat((percentage * 100).toFixed(2)) + "%";
+					percentages.push({ name: get_name(value.row).value, value: parseFloat((percentage * 100).toFixed(2))});
 					position += size;
 				}
 			}
+
+			let scale = $(groups[i]).find('.scale')[0];
+			console.warn(scale);
+			console.info(percentages);
+
+			generate_scale(scale, percentages);
 		}
 	}
 	
@@ -532,6 +717,7 @@
 				get_group_name(group).value = groups[i].name;
 				const rows = groups[i].rows;
 
+				let percentages = [];
 				for (let i = 0; i < rows.length; i++) {
 					console.log("Add row " + rows[i].name);
 					const row = add_row(1, get_group_row_container(group))[0];
@@ -539,7 +725,11 @@
 					get_input(row).value = rows[i].input;
 					get_output(row).value = rows[i].output;
 					get_percentage(row).innerText = rows[i].percentage;
+					percentages.push({ name: rows[i].name, value: parseFloat(rows[i].percentage.replace("%", "")) });
 				}
+
+				let scale = $(group).find('.scale')[0];
+				generate_scale(scale, percentages);
 			}
 		} catch (ex) {
 			if (ex.message.toLowerCase().indexOf("unexpected") !== -1)
@@ -573,6 +763,54 @@
 
 		export_output.value = str;
 		$(export_output_modal).show('fast');
+	}
+
+	function generate_scale(scale_container, percentages, group = true, sort = true) {
+		scale_container.innerHTML = "";
+
+		if (group) {
+			let total = 0;
+			let grouped = [];
+			for (let i = 0; i < percentages.length; i++) {
+				let perc = percentages[i];
+				if (grouped.indexOf(perc.value) === -1) {
+					grouped.push(perc.value);
+					total += perc.value;
+				}
+			}
+			console.info("Total: " + total);
+
+			let grouped_percentages = [];
+			let value_indexes = [];
+			for (let i = 0; i < percentages.length; i++) {
+				let percentage = percentages[i];
+				let index = value_indexes.indexOf(percentage.value);
+				if (index === -1) {
+					value_indexes.push(percentage.value);
+					let override_perc = percentage.value / total;
+					console.log(override_perc);
+					grouped_percentages.push({ name: percentage.name + "<br/>", value: parseFloat((override_perc * 100).toFixed(2)), count: 1 });
+				} else {
+					grouped_percentages[index].name += percentage.name + "<br/>";
+					grouped_percentages[index].count++;
+				}
+			}
+
+			percentages = grouped_percentages;
+		}
+
+		if (sort) {
+			percentages = sortObj(percentages, 'value').reverse();
+		}
+
+		for (let i = 0; i < percentages.length; i++) {
+			let percentage = percentages[i];
+			let bar = document.createElement("span");
+			bar.style.width = percentage.value + "%";
+			bar.innerHTML = "<span class='label-container'><span class='label-outer'><span class='label-inner'>" + percentage.value + "% (" + percentage.count + ")</span></span></span><div>" + percentage.value + "% (" + percentage.count + ")<br/>" + percentage.name + "</div>";
+
+			scale_container.appendChild(bar);
+		}
 	}
 
 	let groups = add_group(1);
